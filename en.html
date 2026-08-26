@@ -1,0 +1,1335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iDentity Prompt Engine</title>
+<style>
+  :root{
+    --ink:#141416;
+    --plate:#1b1b1e;
+    --plate2:#1f1f22;
+    --line:#2b2b2f;
+    --line-soft:#232326;
+    --paper:#f4f2ee;
+    --steel:#565b62;
+    --ash:#8d8a86;
+    --ash-dim:#68656f;
+    --ember:#d9541e;
+    --ember-bright:#ff7a3d;
+    --gold:#dd9a35;
+    --text:#e9e6e1;
+    --text-dim:#b6b2ac;
+
+    --sel-text:#ffd9c4;
+    --success-text:#c7f0cf;
+    --success-border:#4a8f5c;
+    --danger-text:#f0b6a8;
+    --danger-text-strong:#ffd2c4;
+    --danger-close:#c98d80;
+    --danger-border:#6b2a20;
+    --danger-border-soft:#5c2a20;
+    --gold-border-soft:#5c451c;
+    --gold-text-soft:#f2d599;
+    --chip-conflict-text:#ffb8a8;
+    --chip-conflict-border:#b23a2e;
+    --toast-bg1:#241614;
+    --toast-bg2:#1b1210;
+    --panel-bg1:#202023;
+    --panel-bg2:#161618;
+    --output-text:#f2ded1;
+    --ember-rgb:217,84,30;
+    --gold-rgb:221,154,53;
+    --danger-rgb:178,58,46;
+    --success-rgb:74,143,92;
+    --bg-glow1:rgba(217,84,30,0.10);
+    --bg-glow2:rgba(221,154,53,0.06);
+    --crack-op:.4;
+    --crack-op-flare:.85;
+    --crack-glow:0 0 10px 1px rgba(217,84,30,.45);
+    --crack-glow-flare:0 0 18px 3px rgba(255,122,61,.65);
+    --thumb-ring:#1c1c1e;
+    --input-bg:rgba(0,0,0,.25);
+
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(1200px 500px at 15% -10%, var(--bg-glow1), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, var(--bg-glow2), transparent 55%),
+      var(--ink);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  a{ color:var(--gold); }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:40px 24px 64px; }
+
+  header{ text-align:center; margin-bottom:36px; }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.16em;
+    color:var(--ember-bright); text-transform:uppercase; margin:0 0 10px;
+  }
+  h1{
+    font-family:var(--font-display); font-weight:700; font-size:clamp(28px,5vw,44px);
+    margin:0 0 10px; letter-spacing:.01em; color:#fff;
+  }
+  .tagline{ color:var(--text-dim); font-size:15px; max-width:520px; margin:0 auto; line-height:1.5; }
+  .tagline-cta{
+    font-family:var(--font-mono); font-size:13px; letter-spacing:.03em;
+    color:var(--ember-bright); margin:12px 0 0;
+  }
+
+  .grid{
+    display:grid; grid-template-columns: 1.15fr 1fr; gap:22px; align-items:start;
+  }
+  @media (max-width: 900px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{
+    background:linear-gradient(180deg, var(--plate2), var(--plate));
+    border:1px solid var(--line); border-radius:14px; padding:22px;
+  }
+
+  fieldset{ border:0; margin:0 0 22px; padding:0; }
+  .presets-row{ display:flex; gap:8px; margin-bottom:10px; }
+  .presets-input{
+    flex:1; min-width:0; font-family:var(--font-mono); font-size:12.5px;
+    padding:8px 12px; border-radius:8px; border:1px solid var(--line);
+    background:rgba(0,0,0,.15); color:var(--text);
+  }
+  .presets-input::placeholder{ color:var(--ash-dim); }
+  .presets-input:focus{ outline:none; border-color:var(--ember); }
+  .presets-save{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.03em;
+    padding:8px 14px; border-radius:8px; border:1px solid var(--ember);
+    background:rgba(var(--ember-rgb),0.14); color:var(--sel-text); cursor:pointer;
+    transition:all .15s ease; white-space:nowrap;
+  }
+  .presets-save:hover{ background:rgba(var(--ember-rgb),0.24); }
+  .presets-list{ display:flex; flex-wrap:wrap; gap:8px; }
+  .presets-list:empty{ display:none; }
+  .preset-chip{
+    display:inline-flex; align-items:stretch; border:1px solid var(--line);
+    border-radius:8px; overflow:hidden;
+  }
+  .preset-load{
+    font-family:var(--font-mono); font-size:12px; padding:7px 12px;
+    border:0; background:none; color:var(--ash); cursor:pointer; transition:all .15s ease;
+  }
+  .preset-load:hover{ color:var(--text); background:rgba(255,255,255,.04); }
+  .preset-del{
+    font-family:var(--font-mono); font-size:12px; padding:7px 10px;
+    border:0; border-left:1px solid var(--line); background:none;
+    color:var(--ash-dim); cursor:pointer; transition:all .15s ease;
+  }
+  .preset-del:hover{ color:var(--danger-text); background:rgba(var(--danger-rgb),0.12); }
+  legend{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ash); padding:0 0 10px; width:100%;
+    border-bottom:1px solid var(--line-soft); margin-bottom:12px;
+  }
+  .subcap{
+    font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ash-dim); margin:0 0 6px;
+  }
+
+  .chips{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px,1fr)); gap:8px; }
+  .chip{
+    position:relative; display:flex; align-items:center; justify-content:center;
+    text-align:center; cursor:pointer;
+    border:1px solid var(--line); border-radius:12px; padding:8px 10px;
+    font-size:13px; line-height:1.3; color:var(--text-dim); background:rgba(255,255,255,0.01);
+    transition:border-color .15s ease, color .15s ease, background .15s ease, box-shadow .15s ease;
+    user-select:none;
+  }
+  .chip input{ position:absolute; opacity:0; width:0; height:0; pointer-events:none; }
+  .chip:hover{ border-color:var(--ash-dim); color:var(--text); }
+  .chip.selected{
+    border-color:var(--ember); color:var(--sel-text); background:rgba(var(--ember-rgb),0.14);
+    box-shadow:0 0 0 1px rgba(var(--ember-rgb),0.25) inset;
+  }
+  .chip:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:2px; }
+
+  .genre-group{ margin-bottom:14px; }
+  .genre-row{ display:grid; grid-template-columns:repeat(auto-fill, minmax(148px,1fr)); gap:8px; }
+  .genre-chip{
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; cursor:pointer;
+    font-size:13px; line-height:1.3; color:var(--text-dim); background:rgba(255,255,255,0.015);
+    transition:all .15s ease;
+  }
+  @media (max-width: 480px){
+    .card{ padding:16px; }
+    .chips{ grid-template-columns:repeat(auto-fill, minmax(84px,1fr)); gap:7px; }
+    .genre-row{ grid-template-columns:repeat(2, 1fr); gap:7px; }
+    .chip, .genre-chip{ font-size:12.5px; padding:9px 8px; }
+    .presets-row{ flex-wrap:wrap; }
+    .presets-input{ flex-basis:100%; }
+    .presets-save{ flex:1; }
+  }
+  .genre-chip:hover{ border-color:var(--ash-dim); color:var(--text); }
+  .genre-chip.selected{
+    border-color:var(--ember); background:rgba(var(--ember-rgb),0.16); color:var(--sel-text);
+    box-shadow:0 0 0 1px rgba(var(--ember-rgb),0.3) inset;
+  }
+  .genre-chip:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:2px; }
+
+  .sliders{ display:flex; flex-direction:column; gap:16px; }
+  .slider-row label{
+    display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim);
+    margin-bottom:6px; font-family:var(--font-mono);
+  }
+  .slider-row .val{ color:var(--ember-bright); }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none; width:100%; height:4px; border-radius:3px;
+    background:linear-gradient(90deg, var(--steel), var(--ember) var(--fill,50%), var(--line-soft) var(--fill,50%));
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background:var(--ember-bright); border:2px solid var(--thumb-ring);
+    box-shadow:0 0 8px 1px rgba(var(--ember-rgb),0.55); cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:16px; height:16px; border-radius:50%; background:var(--ember-bright);
+    border:2px solid var(--thumb-ring); box-shadow:0 0 8px 1px rgba(var(--ember-rgb),0.55); cursor:pointer;
+  }
+  input[type=range]:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:4px; }
+
+  .notices{ margin-top:20px; display:flex; flex-direction:column; gap:8px; }
+  .notice{
+    font-size:12.5px; line-height:1.5; padding:9px 12px; border-radius:8px;
+    border:1px solid var(--line);
+  }
+  .toast.gold{
+    border-color:var(--gold-border-soft);
+    background:linear-gradient(165deg, var(--plate2), var(--plate));
+    color:var(--gold-text-soft);
+  }
+  .toast.gold .toast-icon{ color:var(--gold); }
+  .toast.gold .toast-body b{ color:var(--gold-text-soft); }
+  .toast.gold .toast-close{ color:var(--gold); }
+  .toast.gold .toast-close:hover{ color:var(--gold-text-soft); }
+
+  .reset-row{ margin-top:22px; text-align:right; }
+  .btn-ghost{
+    font-family:var(--font-mono); font-size:12px; color:var(--ash);
+    background:none; border:1px solid var(--line); border-radius:8px;
+    padding:7px 12px; cursor:pointer; transition:all .15s ease;
+  }
+  .btn-ghost:hover{ color:var(--text); border-color:var(--ash-dim); }
+
+  .output{ position:sticky; top:24px; }
+  .tabs{ display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:10px; }
+  .btn-regen{
+    font-family:var(--font-mono); font-size:12.5px; padding:9px 14px; border-radius:8px;
+    border:1px solid var(--line); color:var(--ash); background:none;
+    cursor:pointer; transition:all .15s ease;
+  }
+  .btn-regen:hover{ color:var(--text); border-color:var(--ash-dim); }
+  .settings-row{ display:grid; grid-template-columns:repeat(2, 1fr); gap:6px; margin-bottom:12px; }
+  .output-stats{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.02em;
+    padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+    color:var(--ash-dim); display:flex; align-items:center; justify-content:center;
+  }
+  .hum-toggle{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.04em;
+    padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+    background:none; color:var(--ash); cursor:pointer; transition:all .15s ease;
+    width:100%; grid-column:2;
+  }
+  .hum-toggle.active{ border-color:var(--success-border); color:var(--success-text); background:rgba(var(--success-rgb),0.16); }
+  .hum-toggle:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:2px; }
+
+  /* ---- conflict toast ---- */
+  .toast-stack{
+    position:fixed; top:18px; left:50%; transform:translateX(-50%);
+    display:flex; flex-direction:column; gap:8px; z-index:9999;
+    width:min(92vw, 460px); pointer-events:none;
+  }
+  .toast{
+    pointer-events:auto;
+    display:flex; align-items:flex-start; gap:10px;
+    background:linear-gradient(165deg, var(--toast-bg1), var(--toast-bg2));
+    border:1px solid var(--danger-border); border-radius:10px; padding:12px 14px;
+    box-shadow:0 8px 28px rgba(0,0,0,.45), 0 0 0 1px rgba(var(--danger-rgb),.25) inset;
+    color:var(--danger-text); font-size:13px; line-height:1.45;
+    opacity:0; transform:translateY(-14px) scale(.97);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .toast.show{ opacity:1; transform:translateY(0) scale(1); }
+  .toast .toast-icon{ font-size:15px; line-height:1.3; flex-shrink:0; }
+  .toast .toast-body b{ color:var(--danger-text-strong); }
+  .toast .toast-close{
+    margin-left:auto; background:none; border:0; color:var(--danger-close); cursor:pointer;
+    font-size:15px; line-height:1; padding:0 0 0 8px; flex-shrink:0;
+  }
+  .toast .toast-close:hover{ color:var(--danger-text-strong); }
+  @media (prefers-reduced-motion: reduce){ .toast{ transition:none; } }
+
+  .chip.chip-conflict{
+    border-color:var(--chip-conflict-border) !important; color:var(--chip-conflict-text) !important;
+    background:rgba(var(--danger-rgb),0.16) !important;
+    animation:chipPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes chipPulse{
+    0%,100%{ box-shadow:0 0 0 1px rgba(var(--danger-rgb),.3) inset; }
+    50%{ box-shadow:0 0 0 1px rgba(var(--danger-rgb),.3) inset, 0 0 10px 1px rgba(var(--danger-rgb),.55); }
+  }
+  @media (prefers-reduced-motion: reduce){ .chip.chip-conflict{ animation:none; } }
+  .genre-chip.genre-conflict{
+    border-color:var(--chip-conflict-border) !important; color:var(--chip-conflict-text) !important;
+    background:rgba(var(--danger-rgb),0.16) !important;
+    animation:chipPulse 1.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce){ .genre-chip.genre-conflict{ animation:none; } }
+  .humin{
+    width:100%; min-height:150px; resize:vertical; margin-bottom:14px;
+    background:var(--input-bg); border:1px solid var(--line); border-radius:8px;
+    color:var(--text); font-family:var(--font-mono); font-size:12.5px; line-height:1.6;
+    padding:12px;
+  }
+  .humin:focus{ outline:none; border-color:var(--ember); }
+  .humin::placeholder{ color:var(--ash-dim); }
+  .tab{
+    font-family:var(--font-mono); font-size:12px; letter-spacing:.04em;
+    padding:8px 14px; border-radius:8px; border:1px solid var(--line);
+    background:none; color:var(--ash); cursor:pointer; transition:all .15s ease;
+  }
+  .tab.active{ border-color:var(--ember); color:var(--sel-text); background:rgba(var(--ember-rgb),0.12); }
+  .tab:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:2px; }
+
+  .panel{
+    position:relative; overflow:hidden; border-radius:12px; padding:26px 24px;
+    background:linear-gradient(165deg, var(--panel-bg1), var(--panel-bg2) 65%);
+    border:1px solid var(--line);
+    min-height:220px;
+  }
+  .crack{
+    position:absolute; height:1.5px; pointer-events:none;
+    background:linear-gradient(90deg, transparent, var(--ember) 35%, var(--ember-bright) 50%, var(--ember) 65%, transparent);
+    opacity:var(--crack-op); filter:blur(.2px);
+    box-shadow:var(--crack-glow);
+    transition:opacity .5s ease, box-shadow .5s ease;
+  }
+  .c1{ top:16%; left:-8%; width:65%; transform:rotate(3.5deg); }
+  .c2{ top:48%; left:32%; width:60%; transform:rotate(-6deg); }
+  .c3{ top:80%; left:-6%; width:42%; transform:rotate(8deg); }
+  .panel.flare .crack{ opacity:var(--crack-op-flare); box-shadow:var(--crack-glow-flare); }
+  @media (prefers-reduced-motion: reduce){ .crack{ transition:none; } }
+
+  .promptbox{
+    position:relative; font-family:var(--font-mono); font-size:13.5px; line-height:1.65;
+    color:var(--output-text); white-space:pre-wrap; word-break:break-word; margin:0 0 18px;
+  }
+  .actions{ display:flex; gap:8px; margin-top:16px; }
+  .btn-copy{
+    font-family:var(--font-mono); font-size:12.5px; padding:9px 16px; border-radius:8px;
+    border:1px solid var(--ember); color:var(--sel-text); background:rgba(var(--ember-rgb),0.14);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .btn-copy:hover{ background:rgba(var(--ember-rgb),0.24); }
+  .btn-copy.copied{ border-color:var(--success-border); color:var(--success-text); background:rgba(var(--success-rgb),0.18); }
+  .btn-copy:focus-visible{ outline:2px solid var(--ember-bright); outline-offset:2px; }
+
+  footer{ text-align:center; margin-top:40px; padding-top:22px; border-top:1px solid var(--line-soft); }
+  .brand-mark{ display:inline-flex; align-items:center; gap:8px; }
+  .brand-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--ember-bright);
+    box-shadow:0 0 8px 1px rgba(var(--ember-rgb),.5);
+  }
+  .brand-name{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--ember-bright);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">iDentity Prompt Engine</p>
+    <h1>Music DNA</h1>
+    <p class="tagline">Tick the DNA, set the emotional level, and the prompt compiles itself on the other end.</p>
+    <p class="tagline-cta">Be the ARCHITECT of your hits.</p>
+  </header>
+
+  <main class="grid">
+
+    <section class="card compose">
+
+      <fieldset>
+        <legend>Saved presets</legend>
+        <div class="presets-row">
+          <input type="text" id="presetName" class="presets-input" placeholder="Name this combo\u2026" maxlength="40">
+          <button type="button" class="presets-save" id="savePresetBtn">Save preset</button>
+        </div>
+        <div class="presets-list" id="presetsList"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Genre base</legend>
+        <div id="genreGroups"></div>
+      </fieldset>
+
+      <div id="familiesContainer"></div>
+
+      <fieldset>
+        <legend>Emotional Level</legend>
+        <div class="sliders" id="sliders"></div>
+      </fieldset>
+
+      <div class="reset-row">
+        <button class="btn-ghost" id="resetBtn" type="button">Reset to defaults</button>
+      </div>
+    </section>
+
+    <aside class="output">
+      <div class="tabs">
+        <button class="tab active" data-tab="prompt" type="button">Suno prompt</button>
+        <button class="tab" data-tab="brief" type="button">Lyric brief</button>
+        <button class="tab" data-tab="hum" type="button">Humaniser</button>
+        <button class="tab" data-tab="mdl" type="button">MDL</button>
+      </div>
+      <div class="settings-row">
+        <div class="output-stats" id="outputStats"></div>
+        <button class="hum-toggle active" id="humToggle" type="button" title="Strip AI tells from the output">Humaniser: on</button>
+      </div>
+
+      <div class="panel" id="panel">
+        <div class="crack c1"></div>
+        <div class="crack c2"></div>
+        <div class="crack c3"></div>
+        <textarea class="humin" id="humIn" hidden placeholder="Paste your lyrics or any text here. The humaniser strips AI tells: em dashes, filler, promo language, chatbot artefacts."></textarea>
+        <pre class="promptbox" id="promptbox"></pre>
+        <div class="actions">
+          <button class="btn-copy" id="copyBtn" type="button">Copy prompt</button>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <footer>
+    <div class="brand-mark">
+      <span class="brand-dot"></span>
+      <span class="brand-name">iDentity Prompt Engine</span>
+    </div>
+  </footer>
+
+</div>
+
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- FAMILIES (role-tagged, ordered) ----------------
+  const FAMILIES = [
+   { key:"atmosphere", label:"Atmosphere / World DNA", short:"Atmosphere / World", mdl:"ATMOSPHERE", role:"atmosphere", items:{
+      water:{ name:"Water", phrase:"flowing, liquid transitions with breathing pads and water ambience" },
+      fire:{ name:"Fire", phrase:"a rising, explosive charge with distorted, aggressive dynamics" },
+      storm:{ name:"Storm", phrase:"irregular percussion, massive toms, thunder FX and tension-release swells" },
+      forest:{ name:"Forest", phrase:"wooden percussion, birdsong, moss ambience and airy flutes" },
+      moon:{ name:"Moon", phrase:"a soft female choir, shimmering pads and gentle reverb" },
+      blacksun:{ name:"Black Sun", phrase:"a cavernous, shadowed atmosphere with cathedral reverb" },
+      citylights:{ name:"City Lights", phrase:"a neon-lit night city, wet asphalt reflecting streetlights" },
+      sunsetdrive:{ name:"Sunset Drive", phrase:"a nostalgic drive into the sunset, warm and wistful" },
+      heartbreakrain:{ name:"Heartbreak Rain", phrase:"rain streaking down glass, a heartbreak atmosphere" },
+      goldenhour:{ name:"Golden Hour", phrase:"warm, golden late-afternoon light" },
+      clubstrobe:{ name:"Club Strobe", phrase:"a strobing club atmosphere with the bass felt in the floor" },
+      vinylwarmth:{ name:"Vinyl Warmth", phrase:"vintage vinyl warmth with soft surface crackle" },
+   }},
+   { key:"guitar", label:"Guitar DNA", short:"Guitar", mdl:"GUITAR", role:"melody", items:{
+      arena:{ name:"Arena", phrase:"wide, heavy arena guitars with stadium-wide octave layering" },
+      industrial:{ name:"Industrial", phrase:"palm-muted, mechanically precise riffs over steel and sparks" },
+      postrock:{ name:"Post Rock", phrase:"clean, spacious delay-driven guitars building from low to soaring" },
+      djent:{ name:"Djent", phrase:"syncopated, tightly palm-muted low-tuned riffs" },
+      shoegaze:{ name:"Shoegaze", phrase:"hazy, blurred wall-of-sound guitars drenched in reverb and distortion" },
+      bluesrock:{ name:"Blues Rock", phrase:"raw, expressive blues-rock guitar with soulful bends and grit" },
+   }},
+   { key:"keys", label:"Keys DNA", short:"Keys", mdl:"KEYS", role:"melody", items:{
+      grandpiano:{ name:"Grand Piano Ballad", phrase:"a grand piano carrying the melody with ballad-like restraint" },
+      rhodessoul:{ name:"Rhodes Soul", phrase:"warm Rhodes electric piano with soulful chord voicings" },
+      churchorgan:{ name:"Church Organ", phrase:"a church organ swelling underneath with sacred weight" },
+      lushsynthpad:{ name:"Lush Synth Pad", phrase:"lush layered synth pads holding a wide harmonic bed" },
+      honkytonk:{ name:"Honky Tonk Piano", phrase:"a slightly out-of-tune honky-tonk piano with a worn, playful character" },
+      vintageanalog:{ name:"Vintage Analog Synth", phrase:"a warm vintage analog synth lead with retro character" },
+   }},
+   { key:"strings", label:"Strings DNA", short:"Strings", mdl:"STRINGS", role:"melody", items:{
+      symphonic:{ name:"Symphonic", phrase:"a full symphonic string section sweeping underneath" },
+      chamber:{ name:"Chamber", phrase:"an intimate chamber string quartet" },
+      solocello:{ name:"Solo Cello", phrase:"a single solo cello carrying a mournful line" },
+      pizzicato:{ name:"Pizzicato", phrase:"plucked pizzicato strings adding light rhythmic detail" },
+      tremolostrings:{ name:"String Tremolo", phrase:"tense, shimmering tremolo strings building unease" },
+      violinsolo:{ name:"Solo Violin", phrase:"a single expressive solo violin carrying the melody" },
+   }},
+   { key:"brass", label:"Brass DNA", short:"Brass", mdl:"BRASS", role:"melody", items:{
+      funkhorns:{ name:"Funk Horn Section", phrase:"a tight funk horn section punching on the accents" },
+      bigband:{ name:"Big Band", phrase:"a big band brass section blasting in full arrangement" },
+      reggaetonhorns:{ name:"Reggaeton Horns", phrase:"bright reggaeton horn stabs cutting through the mix" },
+      mariachitrumpets:{ name:"Mariachi Trumpets", phrase:"soaring mariachi trumpets carrying the melody" },
+      neworleansbrass:{ name:"New Orleans Brass", phrase:"a loose, joyful New Orleans street-parade brass band" },
+      skahorns:{ name:"Ska Horns", phrase:"bright, upbeat ska horn stabs on the offbeat" },
+   }},
+   { key:"synthlead", label:"Synth Lead DNA", short:"Synth Lead", mdl:"SYNTHLEAD", role:"melody", items:{
+      plucklead:{ name:"Pluck Lead", phrase:"a bright plucked synth lead carrying the hook" },
+      supersawdrop:{ name:"Supersaw Drop", phrase:"a massive supersaw lead dropping in at the peak" },
+      arpeggiated:{ name:"Arpeggiated Sequence", phrase:"a fast arpeggiated synth sequence running underneath" },
+      vocoderlead:{ name:"Vocoder Lead", phrase:"a robotic vocoder lead doubling the melody" },
+      fmbell:{ name:"FM Bell Lead", phrase:"a glassy, bell-like FM synth lead" },
+      acidlead:{ name:"Distorted Acid Lead", phrase:"a gritty, squelching acid-house synth lead" },
+   }},
+   { key:"drums", label:"Drum DNA", short:"Drum", mdl:"DRUMS", role:"rhythm", items:{
+      tribal:{ name:"Tribal", phrase:"organic hand percussion with a breathing, tribal groove" },
+      mechanical:{ name:"Mechanical", phrase:"tight, mechanical industrial impacts with double-kick precision" },
+      stadium:{ name:"Stadium", phrase:"huge arena toms filling a wide room" },
+      cinematic:{ name:"Cinematic", phrase:"war toms, reverse hits and cinematic impact swells" },
+      jazzbrushes:{ name:"Jazz Brushes", phrase:"soft brushed drums with a swinging, intimate feel" },
+      breakbeat:{ name:"Breakbeat", phrase:"a chopped, syncopated breakbeat groove" },
+   }},
+   { key:"bass", label:"Bass DNA", short:"Bass", mdl:"BASS", role:"rhythm", items:{
+      sub808:{ name:"808 Sub Bass", phrase:"a deep, distorted 808 sub bass rattling the low end" },
+      uprightjazz:{ name:"Upright Jazz Bass", phrase:"an upright jazz bass walking under the chords" },
+      slapfunk:{ name:"Slap Funk Bass", phrase:"a slapped, percussive funk bass driving the groove" },
+      synthbass:{ name:"Synth Bass", phrase:"a fat, growling synth bass carrying the low end" },
+      fretless:{ name:"Fretless Bass", phrase:"a smooth, slippery fretless bass gliding between notes" },
+      punkbass:{ name:"Distorted Punk Bass", phrase:"a gritty, overdriven punk bass driving hard" },
+   }},
+   { key:"flow", label:"Flow DNA", short:"Flow", mdl:"FLOW", role:"rhythm", items:{
+      boombap:{ name:"Boom Bap Groove", phrase:"a boom bap groove with dusty, head-nodding swing" },
+      traphihats:{ name:"Trap Hi-Hats", phrase:"rapid, rolling trap hi-hats stacked over a half-time beat" },
+      doubletime:{ name:"Double-Time", phrase:"a double-time rap flow accelerating over the beat" },
+      melodicrap:{ name:"Melodic Rap", phrase:"a melodic rap flow, half-sung half-spoken" },
+      drillflow:{ name:"Drill Flow", phrase:"a dark, sliding drill rhythm with rolling hi-hats" },
+      choppedscrewed:{ name:"Chopped & Screwed", phrase:"a slowed, woozy chopped-and-screwed flow" },
+   }},
+   { key:"vocal", label:"Vocal DNA", short:"Vocal", mdl:"VOCAL", role:"vocal", items:{
+      raspy:{ name:"Raspy", phrase:"a raspy, gritty vocal moving from intimate to explosive" },
+      breathy:{ name:"Breathy", phrase:"a close, breathy, airy-textured vocal" },
+      ethereal:{ name:"Ethereal", phrase:"a layered, reverbed whisper" },
+      gang:{ name:"Gang", phrase:"wide gang-vocal chants with choir support" },
+      slavic:{ name:"Slavic Mystic", phrase:"a non-verbal female vocal with Slavic phrasing" },
+      popbelt:{ name:"Pop Belt", phrase:"a powerful, polished pop belt vocal built for radio" },
+      rapflow:{ name:"Rap Flow", phrase:"a rhythmic rap vocal, delivered like percussion, with ad-libs" },
+      rnbruns:{ name:"R&B Runs", phrase:"soulful R&B runs and melismatic vocal riffs" },
+      operatic:{ name:"Operatic", phrase:"an operatic vocal with classical training and vibrato" },
+      folkstoryteller:{ name:"Folk Storyteller", phrase:"a plain-spoken, conversational folk vocal" },
+      gospellead:{ name:"Gospel Lead", phrase:"a gospel lead vocal trading lines with a call-and-response choir" },
+      autotuned:{ name:"Auto-Tuned", phrase:"a modern, Auto-Tuned vocal texture" },
+   }},
+   { key:"dynamics", label:"Dynamics DNA", short:"Dynamics", mdl:"DYNAMICS", role:"dynamics", items:{
+      wave:{ name:"Wave", phrase:"energy that swells and recedes in waves" },
+      explosion:{ name:"Explosion", phrase:"a slow build detonating without warning" },
+      ascension:{ name:"Ascension", phrase:"energy that only ever climbs, never resets" },
+      tide:{ name:"Tide", phrase:"energy that pulls back and surges like a tide" },
+      pulse:{ name:"Pulse", phrase:"energy that holds a steady, hypnotic pulse throughout" },
+      collapse:{ name:"Collapse", phrase:"energy that suddenly falls away rather than building" },
+   }},
+  ];
+  const FAMILY_KEYS = FAMILIES.map(f => f.key);
+
+  const GENRE_GROUPS = [
+   { label:"Rock world", items:{
+      arena:{ label:"Arena Hard Rock/Industrial", base:"modern cinematic arena hard rock fused with industrial rock and alternative metal", tempo:"a driving 70-130 BPM, drop-D", mdl:["ArenaHardRock","Industrial","AltMetal"] },
+      slavicg:{ label:"Slavic Mystic Ethno", base:"soft Slavic ethno-electronic downtempo with ritual ambient textures", tempo:"a slow, unhurried tempo", mdl:["EthnoElectronic","Downtempo","RitualAmbient"] },
+      synth:{ label:"Cinematic Synthwave", base:"cinematic synthwave with retro-futuristic analog synths", tempo:"a steady, pulsing mid-tempo", mdl:["Synthwave","Cinematic"] },
+      postrockg:{ label:"Post-Rock Cinematic", base:"post-rock instrumental cinema, built from silence to catharsis", tempo:"a patient, slow-building tempo", mdl:["PostRock","Instrumental","Cinematic"] },
+      dark:{ label:"Dark Ambient Ballad", base:"a dark cinematic ballad, sparse and cavernous", tempo:"a slow, spacious tempo", mdl:["DarkAmbient","Ballad","Cinematic"] },
+      grunge:{ label:"Grunge/Alt Rock", base:"raw 90s grunge and alternative rock, unpolished and heavy with feedback", tempo:"a mid-tempo 90-120 BPM", mdl:["Grunge","AltRock"] },
+   }},
+   { label:"Beyond Rock", items:{
+      pop:{ label:"Pop Anthem", base:"a polished mainstream pop anthem", tempo:"an upbeat 100-124 BPM", mdl:["PopAnthem","Mainstream"] },
+      hiphop:{ label:"Hip-Hop/Trap", base:"a modern hip-hop and trap production", tempo:"a hard-hitting 130-150 BPM half-time feel", mdl:["HipHop","Trap"] },
+      rnb:{ label:"R&B/Neo-Soul", base:"smooth R&B and neo-soul", tempo:"a laid-back 70-90 BPM groove", mdl:["RnB","NeoSoul"] },
+      classical:{ label:"Classical/Orchestral", base:"a classical orchestral piece", tempo:"a free, expressive tempo", mdl:["Classical","Orchestral"] },
+      jazz:{ label:"Jazz/Lounge", base:"a relaxed jazz lounge arrangement", tempo:"a swinging, unhurried tempo", mdl:["Jazz","Lounge"] },
+      edm:{ label:"EDM/Dance", base:"a high-energy EDM dance track", tempo:"a pulsing 126-130 BPM four-on-the-floor", mdl:["EDM","Dance"] },
+      latin:{ label:"Latin/Reggaeton", base:"a Latin reggaeton groove", tempo:"a dembow-driven 90-96 BPM", mdl:["Latin","Reggaeton"] },
+      folk:{ label:"Folk/Acoustic", base:"an intimate folk acoustic song", tempo:"a gentle, unhurried tempo", mdl:["Folk","Acoustic"] },
+      gospel:{ label:"Gospel/Choir", base:"an uplifting gospel choir arrangement", tempo:"a driving, celebratory tempo", mdl:["Gospel","Choir"] },
+      funk:{ label:"Funk/Disco", base:"a groovy funk and disco production", tempo:"a tight, danceable 100-120 BPM", mdl:["Funk","Disco"] },
+   }},
+  ];
+  const GENRES = {};
+  GENRE_GROUPS.forEach(g => Object.keys(g.items).forEach(k => GENRES[k] = g.items[k]));
+
+  const CONFLICTS = [
+   ["water","mechanical","a current fighting a grid"],
+   ["fire","breathy","the draught drowns the whisper"],
+   ["forest","industrial","organic matter against steel"],
+   ["moon","explosion","stillness against a blast"],
+   ["bass","strings","the sub bass overwhelms the strings"],
+   ["operatic","flow","classical training clashes with a street beat"],
+   ["autotuned","folkstoryteller","processed texture clashes with raw honesty"],
+   ["synthlead","forest","electronics clash with the living forest"],
+   ["raspy","operatic","a rock rasp fights an operatic vibrato in the same line"],
+   ["genre:pop","operatic","academic vibrato fights a radio-pop hook"],
+   ["genre:pop","tribal","hand percussion feels out of place in a polished pop mix"],
+   ["genre:pop","blacksun","cavernous doom clashes with a bright pop anthem"],
+   ["genre:hiphop","strings","a live orchestra fights the beat for space"],
+   ["genre:hiphop","operatic","classical training clashes with a street beat"],
+   ["genre:hiphop","moon","weightless stillness fights a hard-hitting beat"],
+   ["genre:rnb","industrial","mechanical steel riffs fight a smooth soul groove"],
+   ["genre:rnb","mechanical","rigid machine drums crush a laid-back groove"],
+   ["genre:rnb","storm","stormy drama overwhelms an intimate soul mood"],
+   ["genre:classical","flow","a rap cadence has no place in orchestral phrasing"],
+   ["genre:classical","autotuned","processed pitch clashes with acoustic orchestration"],
+   ["genre:classical","sub808","a sub bass overwhelms the orchestra's dynamic range"],
+   ["genre:jazz","synthlead","a synthetic lead feels foreign in a live jazz combo"],
+   ["genre:jazz","clubstrobe","club energy overwhelms a relaxed lounge mood"],
+   ["genre:jazz","djent","a metal riff has no place in a jazz arrangement"],
+   ["genre:edm","folkstoryteller","a plain acoustic voice gets lost under a dance beat"],
+   ["genre:edm","forest","organic woodland texture fights synthetic dance energy"],
+   ["genre:edm","operatic","classical vibrato feels out of place on the dancefloor"],
+   ["genre:latin","ethereal","a weightless whisper fights a driving dembow rhythm"],
+   ["genre:latin","moon","still, ambient calm clashes with reggaeton's drive"],
+   ["genre:latin","blacksun","cavernous doom has no place in a Latin party track"],
+   ["genre:folk","synthlead","a synthetic lead breaks the acoustic illusion"],
+   ["genre:folk","industrial","mechanical steel riffs overwhelm a bare acoustic song"],
+   ["genre:folk","autotuned","processed vocal pitch fights raw acoustic honesty"],
+   ["genre:gospel","autotuned","processed pitch fights a live testimony vocal"],
+   ["genre:gospel","industrial","mechanical steel riffs clash with a church choir"],
+   ["genre:gospel","traphihats","trap hi-hats feel foreign in a gospel arrangement"],
+   ["genre:funk","ethereal","a weightless whisper fights a groove-driven funk track"],
+   ["genre:funk","operatic","classical vibrato feels out of place on the dance floor"],
+   ["genre:funk","blacksun","cavernous doom has no place in an upbeat funk groove"],
+  ];
+
+  const GOLDEN = [
+   [["water","breathy","slavic"], "Slavic mysticism"],
+   [["fire","arena","raspy","gang"], "a stadium anthem"],
+   [["industrial","mechanical","blacksun"], "dark industrial"],
+   [["storm","cinematic","ascension"], "an epic finale"],
+   [["moon","ethereal","postrock"], "an otherworldly ballad"],
+   [["bass","flow","citylights"], "a trap hit"],
+   [["keys","rnbruns","goldenhour"], "a neo-soul ballad"],
+   [["strings","operatic","cinematic"], "an orchestral drama"],
+   [["brass","bass","clubstrobe"], "a funk/disco groove"],
+   [["synthlead","autotuned","clubstrobe"], "an EDM drop"],
+  ];
+
+  const SLIDER_DEFS = [
+    { key:"energy",     label:"Energy" },
+    { key:"darkness",   label:"Darkness" },
+    { key:"mysticism",  label:"Mysticism" },
+    { key:"aggression", label:"Aggression" },
+    { key:"hope",       label:"Hope" },
+  ];
+
+  // ---------------- LYRIC ENGINE ----------------
+  const IMG = {
+    water:{ n:["current","tide","glass","riverbed","rain","undertow"], adj:["cold","slow","clear","deep"], mat:["Water","Glass","Tide"] },
+    fire:{ n:["ember","ash","spark","furnace","smoke","coal"], adj:["hot","burnt","bright","raw"], mat:["Ash","Ember","Fire"] },
+    storm:{ n:["thunder","pressure","horizon","wind","lightning"], adj:["low","heavy","electric","wide"], mat:["Thunder","Storm","Pressure"] },
+    forest:{ n:["moss","root","pine","hollow","bark","clearing"], adj:["green","old","quiet","damp"], mat:["Root","Pine","Moss"] },
+    moon:{ n:["silver","crater","halo","nightfall","frost"], adj:["pale","distant","soft","white"], mat:["Silver","Frost","Moon"] },
+    blacksun:{ n:["eclipse","shadow","absence","cold light","edge"], adj:["black","empty","vast","still"], mat:["Shadow","Eclipse","Void"] },
+    citylights:{ n:["neon","asphalt","streetlight","siren","stairwell"], adj:["wet","late","electric","loud"], mat:["Neon","Asphalt","Static"] },
+    sunsetdrive:{ n:["highway","dashboard","mile marker","rearview","exit"], adj:["long","warm","open","gone"], mat:["Highway","Gold","Mileage"] },
+    heartbreakrain:{ n:["window","wiper","doorway","telephone","hallway"], adj:["grey","cold","empty","late"], mat:["Rain","Glass","Winter"] },
+    goldenhour:{ n:["window light","dust","kitchen floor","late sun","curtain"], adj:["warm","gold","soft","slow"], mat:["Gold","Dust","Hour"] },
+    clubstrobe:{ n:["strobe","floor","bassline","crowd","exit sign"], adj:["fast","bright","loud","hot"], mat:["Strobe","Floor","Voltage"] },
+    vinylwarmth:{ n:["needle","groove","dust","record","static"], adj:["old","warm","worn","soft"], mat:["Static","Dust","Vinyl"] },
+  };
+  const IMG_DEFAULT = { n:["street","window","mirror","clock","doorway"], adj:["cold","late","quiet","open"], mat:["Iron","Signal","Weight"] };
+
+  const VOICE = {
+    raspy:{ pov:"first", tone:"wounded defiance", chant:false, sparse:false },
+    breathy:{ pov:"second", tone:"intimate and close", chant:false, sparse:true },
+    ethereal:{ pov:"fragment", tone:"dreamlike, unfinished", chant:false, sparse:true },
+    gang:{ pov:"collective", tone:"communal, chant-ready", chant:true, sparse:false },
+    slavic:{ pov:"fragment", tone:"non-verbal ritual syllables", chant:true, sparse:true },
+    popbelt:{ pov:"first", tone:"direct and universal", chant:true, sparse:false },
+    rapflow:{ pov:"first", tone:"dense, specific, rhythmic", chant:false, sparse:false },
+    rnbruns:{ pov:"second", tone:"slow burn", chant:false, sparse:false },
+    operatic:{ pov:"third", tone:"elevated, archaic", chant:false, sparse:false },
+    folkstoryteller:{ pov:"third", tone:"plain narrative", chant:false, sparse:false },
+    gospellead:{ pov:"collective", tone:"testimony, call and response", chant:true, sparse:false },
+    autotuned:{ pov:"first", tone:"modern repetitive fragments", chant:true, sparse:true },
+  };
+
+  const FORMS = {
+    rock:["Intro","Verse I","Pre-Chorus","Chorus","Verse II","Pre-Chorus","Chorus","Bridge","Guitar Solo","Final Chorus","Outro"],
+    pop:["Intro","Verse I","Pre-Chorus","Chorus","Verse II","Pre-Chorus","Chorus","Bridge","Final Chorus","Outro"],
+    rap:["Intro","Hook","Verse I","Hook","Verse II","Bridge","Hook","Outro"],
+    rnb:["Intro","Verse I","Chorus","Verse II","Chorus","Bridge","Final Chorus","Outro"],
+    ballad:["Intro","Verse I","Chorus","Verse II","Chorus","Bridge","Final Chorus","Outro"],
+    edm:["Intro","Build","Drop","Verse I","Build","Drop","Breakdown","Final Drop","Outro"],
+    gospel:["Intro","Verse I","Chorus","Verse II","Chorus","Vamp","Final Chorus","Outro"],
+    folk:["Verse I","Verse II","Chorus","Verse III","Bridge","Chorus","Outro"],
+    jazz:["Intro","Head","Verse I","Refrain","Solo","Verse II","Refrain","Outro"],
+    funk:["Intro","Verse I","Chorus","Verse II","Chorus","Breakdown","Final Chorus","Outro"],
+    instrumental:["Intro","Theme I","Development","Theme II","Climax","Resolution"],
+  };
+  const GENRE_FORM = {
+    arena:"rock", slavicg:"ballad", synth:"pop", postrockg:"instrumental", dark:"ballad",
+    pop:"pop", hiphop:"rap", rnb:"rnb", classical:"instrumental", jazz:"jazz",
+    edm:"edm", latin:"funk", folk:"folk", gospel:"gospel", funk:"funk",
+  };
+
+  const THEMES = [
+   {k:"darkness",  theme:"loss, and what stays after it", abst:["silence","distance","winter","weight"]},
+   {k:"mysticism", theme:"an old ritual coming back",      abst:["memory","the name","the hour","water"]},
+   {k:"aggression",theme:"refusal, standing ground",       abst:["teeth","iron","the fault line","the edge"]},
+   {k:"hope",      theme:"a way out, found late",          abst:["morning","the door","breath","the road"]},
+  ];
+
+  function generateBrief(seed){
+    // самодостаточно: без внешних хелперов генератора строк
+    const atmoKeys = Object.keys(state.selected.atmosphere).filter(k=>state.selected.atmosphere[k]);
+    let bank = { n:[], adj:[] };
+    atmoKeys.forEach(k=>{ if(IMG[k]){ bank.n=bank.n.concat(IMG[k].n); bank.adj=bank.adj.concat(IMG[k].adj); } });
+    if(!bank.n.length) bank = IMG_DEFAULT;
+    const vocKeys = Object.keys(state.selected.vocal).filter(k=>state.selected.vocal[k]);
+    const voice = vocKeys.length ? {
+      pov: VOICE[vocKeys[0]].pov,
+      tone: vocKeys.map(k=>VOICE[k].tone).join("; "),
+    } : null;
+    const theme = THEMES.slice().sort((a,b)=> state.sliders[b.k]-state.sliders[a.k])[0];
+    const formKey = GENRE_FORM[state.genre] || "rock";
+    const L=[];
+    L.push("LYRIC BRIEF", "");
+    L.push("Genre: " + GENRES[state.genre].label);
+    L.push("Theme: " + theme.theme + ".");
+    L.push("Voice: " + (voice ? voice.tone + " (" + voice.pov + " person)" : "not set, pick a Vocal DNA"));
+    L.push("Form: " + FORMS[formKey].join(" / "));
+    L.push("Imagery bank: " + bank.n.slice(0,10).join(", ") + ".");
+    L.push("Texture words: " + bank.adj.slice(0,6).join(", ") + ".");
+    L.push("");
+    L.push("Rules:");
+    L.push("- Speak in images, never in slogans.");
+    L.push("- Banned: \"I'm broken\", \"I rise\", \"never give up\", \"fight the fire\", and anything like them.");
+    L.push("- No em dashes. Use full stops and line breaks instead.");
+    L.push("- Every chorus must feel physically larger than the one before it.");
+    L.push("- The second verse sits denser than the first.");
+    L.push("- One precise image beats three vague ones. Leave room for the listener.");
+    return L.join("\n");
+  }
+
+  // ===== LOCAL HUMANISER (из humanizer-en / humanizer-ru) =====
+  // fix — безопасная автозамена, flag — только пометка (нужен смысловой переписыватель)
+
+  const HUM = {
+    en: {
+      fix: [
+        // 13. злоупотребление тире
+        [/\s+[—–]\s+(but|and|not|yet|so|or)\s/gi, ", $1 ", "em dash"],
+        [/\s+[—–]\s+(?=[a-z])/g, ", ", "em dash"],
+        // 26. throat-clearing
+        [/\b[Ii]t'?s worth noting that\s+/g, "", "throat-clearing"],
+        [/\b[Ii]t is important to note that\s+/g, "", "throat-clearing"],
+        [/\b[Ii]t should be noted that\s+/g, "", "throat-clearing"],
+        [/\b[Oo]ne must consider that\s+/g, "", "throat-clearing"],
+        // 22. filler
+        [/\bin order to\b/gi, "to", "filler"],
+        [/\bdue to the fact that\b/gi, "because", "filler"],
+        [/\bat (?:the present|this) moment in time\b/gi, "now", "filler"],
+        [/\bin the event that\b/gi, "if", "filler"],
+        [/\bhas the ability to\b/gi, "can", "filler"],
+        [/\bat its core,?\s*/gi, "", "filler"],
+        // 8. избегание простого is
+        [/\bserves as\b/gi, "is", "avoiding plain 'is'"],
+        [/\bacts as\b/gi, "is", "avoiding plain 'is'"],
+        [/\bfunctions as\b/gi, "is", "avoiding plain 'is'"],
+        // 25. officialese
+        [/\butili[sz]e\b/gi, "use", "officialese"],
+        [/\bprior to\b/gi, "before", "officialese"],
+        [/\bsubsequent to\b/gi, "after", "officialese"],
+        [/\bwith regard to\b/gi, "about", "officialese"],
+        // 27. abstract wrappers
+        [/\bin the (?:world|realm|sphere|space) of\s+/gi, "", "abstract wrapper"],
+        // 4. промо-наречия
+        [/\b(?:truly|genuinely|utterly|incredibly)\s+/gi, "", "promo language"],
+        // 19. chatbot artefacts
+        [/\bLet me know if you'?d like[^.]*\.\s*/gi, "", "chatbot artefact"],
+        [/\b(?:Hope this helps|Great question)[!.]?\s*/gi, "", "chatbot artefact"],
+        // 23. hedging
+        [/\bcould perhaps be suggested that\b/gi, "probably", "hedging"],
+        [/\bmight potentially\b/gi, "might", "hedging"],
+        [/\bsome degree of\s+/gi, "", "hedging"],
+        // 17. emoji
+        [/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s?/gu, "", "emoji"],
+      ],
+      flag: [
+        [/\b(?:not just|isn'?t just|not only)\b[^.]*\b(?:it'?s|but)\b/gi, "negative parallelism"],
+        [/\b(?:testament|pivotal|cornerstone|invaluable|indelible|underscores?)\b/gi, "significance inflation"],
+        [/\b(?:vibrant|unique|one-of-a-kind|breathtaking|unparalleled|iconic|seamless|boasts|nestled)\b/gi, "promo language"],
+        [/\b(?:moreover|delve into|garner|interplay|tapestry|showcase)\b/gi, "AI vocabulary"],
+        [/\b(?:highlighting|demonstrating|showcasing|underscoring|reflecting|symbolising|embodying)\b/gi, "participle padding"],
+      ],
+    },
+    ru: {
+      fix: [
+        // 13. тире вместо запятой перед союзом (предикативное тире не трогаем)
+        [/\s+[—–]\s+(а|но|и|или)\s/g, ", $1 ", "тире"],
+        // 26. вводные-пустышки
+        [/(?<![а-яёА-ЯЁ])[Сс]тоит отметить,?\s*что\s+/g, "", "вводная пустышка"],
+        [/(?<![а-яёА-ЯЁ])[Вв]ажно подчеркнуть,?\s*что\s+/g, "", "вводная пустышка"],
+        [/(?<![а-яёА-ЯЁ])[Нн]еобходимо отметить,?\s*что\s+/g, "", "вводная пустышка"],
+        [/(?<![а-яёА-ЯЁ])[Сс]ледует обратить внимание,?\s*что\s+/g, "", "вводная пустышка"],
+        [/(?<![а-яёА-ЯЁ])[Нн]ельзя не отметить,?\s*что\s+/g, "", "вводная пустышка"],
+        // 4. промо-усилители
+        [/(?<![а-яёА-ЯЁ])(?:поистине|по-настоящему|воистину)\s+/gi, "", "промо-язык"],
+        [/(?<![а-яёА-ЯЁ])в самом сердце(?![а-яёА-ЯЁ])/gi, "в центре", "промо-язык"],
+        [/(?<![а-яёА-ЯЁ])не может не впечатл(?:ять|ить)(?![а-яёА-ЯЁ])/gi, "впечатляет", "промо-язык"],
+        // 8. избегание простого «это»
+            [/(?<![а-яёА-ЯЁ])может похвастаться(?![а-яёА-ЯЁ])/gi, "имеет", "громоздкая связка"],
+        // 22/25. канцелярит
+        [/(?<![а-яёА-ЯЁ])на сегодняшний день(?![а-яёА-ЯЁ])/gi, "сейчас", "канцелярит"],
+        [/(?<![а-яёА-ЯЁ])в связи с тем,?\s*что(?![а-яёА-ЯЁ])/gi, "потому что", "канцелярит"],
+        [/(?<![а-яёА-ЯЁ])в целях(?![а-яёА-ЯЁ])/gi, "для", "канцелярит"],
+        [/(?<![а-яёА-ЯЁ])осуществля(?:ет|ют)\s+/gi, "делает ", "канцелярит"],
+        // 17. эмодзи
+        [/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]\s?/gu, "", "эмодзи"],
+      ],
+      flag: [
+        [/(?<![а-яёА-ЯЁ])не просто(?![а-яёА-ЯЁ])[^.]*(?<![а-яёА-ЯЁ])а(?![а-яёА-ЯЁ])/gi, "отрицательный параллелизм"],
+        [/(?<![а-яёА-ЯЁ])(?:ключев(?:ой|ая|ое|ые)|уникальн[а-яё]+|знаков[а-яё]+|непревзойдённ[а-яё]+)(?![а-яёА-ЯЁ])/gi, "раздувание значимости"],
+        [/(?<![а-яёА-ЯЁ])(?:богат[а-яё]+ наследи[а-яё]+|захватыва[а-яё]+ дух|живописн[а-яё]+)(?![а-яёА-ЯЁ])/gi, "промо-язык"],
+        [/(?<![а-яёА-ЯЁ])(?:подчёркивая|демонстрируя|отражая|символизируя|воплощая|способствуя)(?![а-яёА-ЯЁ])/gi, "деепричастный балласт"],
+        [/(?<![а-яёА-ЯЁ])(?:кроме того|в контексте|нюансы|палитра)(?![а-яёА-ЯЁ])/gi, "ИИ-лексика"],
+        [/(?<![а-яёА-ЯЁ])(?:является|служит|представляет собой|выступает в роли)(?![а-яёА-ЯЁ])/gi, "громоздкая связка (падеж правится вручную)"],
+      ],
+    },
+  };
+
+  function humanise(text, lang){
+    const rules = HUM[lang] || HUM.en;
+    let out = text;
+    const fixes = [];
+    rules.fix.forEach(([re, to, label])=>{
+      const before = out;
+      out = out.replace(re, to);
+      if (out !== before){
+        const n = (before.match(re)||[]).length;
+        fixes.push({label, n, kind:"fix"});
+      }
+    });
+    const flags = [];
+    rules.flag.forEach(([re, label])=>{
+      const m = out.match(re);
+      if (m) flags.push({label, n:m.length, kind:"flag", sample:m[0]});
+    });
+    // двойные пробелы и пробел перед точкой после вырезок
+    out = out.replace(/[ \t]{2,}/g, " ").replace(/\s+([.,;:!?])/g, "$1");
+    // заглавная в начале текста и после точки
+    out = out.replace(/^([a-zа-яё])/, (m,c)=>c.toUpperCase());
+    out = out.replace(/([.!?]\s+)([a-zа-яё])/g, (m,a,c)=>a+c.toUpperCase());
+    return { text: out, fixes, flags };
+  }
+
+  // ---------------- state ----------------
+  function emptySelection(){
+    const s = {}; FAMILIES.forEach(f => s[f.key] = {}); return s;
+  }
+  function defaultState(){
+    return {
+      genre:"arena",
+      selected: emptySelection(),
+      sliders:{ energy:50, darkness:20, mysticism:10, aggression:20, hope:20 },
+      tab:"prompt",
+      humOn:true,
+      humInput:"",
+    };
+  }
+  let state = defaultState();
+
+  // ---------------- compiling ----------------
+  function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+  function naturalJoin(arr){
+    if (arr.length === 0) return "";
+    if (arr.length === 1) return arr[0];
+    if (arr.length === 2) return arr[0] + " and " + arr[1];
+    return arr.slice(0,-1).join(", ") + ", and " + arr[arr.length-1];
+  }
+  function selectedKeys(famKey){
+    return Object.keys(state.selected[famKey]).filter(k => state.selected[famKey][k]);
+  }
+  function phrasesByRole(role){
+    let out = [];
+    FAMILIES.filter(f => f.role === role).forEach(f => {
+      selectedKeys(f.key).forEach(k => out.push(f.items[k].phrase));
+    });
+    return out;
+  }
+  function energyWord(v){
+    if (v < 25) return "a hushed, restrained arc that barely lifts off the ground";
+    if (v < 55) return "a steadily building arc, gathering weight with every section";
+    if (v < 80) return "relentless energy that keeps climbing from the first chorus";
+    return "maximal, explosive energy from the first bar to the last";
+  }
+  function moodAdjectives(){
+    const s = state.sliders;
+    const dims = [
+      { value:s.darkness,   words:"shadowed, cold" },
+      { value:s.mysticism,  words:"ritual, ancient" },
+      { value:s.aggression, words:"raw, confrontational" },
+      { value:s.hope,       words:"uplifting, hopeful" },
+    ];
+    return dims.filter(d => d.value > 55).sort((a,b) => b.value - a.value).slice(0,2).map(d => d.words);
+  }
+
+  function compilePrompt(){
+    const g = GENRES[state.genre];
+    const parts = [];
+    const mood = moodAdjectives();
+    const moodStr = mood.length ? ", " + mood.join(", ") : "";
+    parts.push(cap(g.base) + moodStr + ", at " + g.tempo + ".");
+
+    const atmo = phrasesByRole("atmosphere");
+    if (atmo.length) parts.push(cap(naturalJoin(atmo)) + ".");
+
+    const melody = phrasesByRole("melody");
+    if (melody.length) parts.push(cap(naturalJoin(melody)) + ".");
+
+    const rhythm = phrasesByRole("rhythm");
+    if (rhythm.length) parts.push(cap(naturalJoin(rhythm)) + ".");
+
+    const vocal = phrasesByRole("vocal");
+    if (vocal.length) parts.push(cap(naturalJoin(vocal)) + ".");
+
+    const dyn = phrasesByRole("dynamics");
+    const energyClause = energyWord(state.sliders.energy);
+    parts.push(dyn.length
+      ? cap(energyClause + ", " + naturalJoin(dyn) + ".")
+      : cap(energyClause + "."));
+
+    parts.push("Radio-ready mix, analog warmth, enormous stereo width.");
+    return parts.join(" ");
+  }
+
+  function compileMDL(){
+    const g = GENRES[state.genre];
+    const lines = [];
+    lines.push("GENRE(" + g.mdl.join(", ") + ")");
+    FAMILIES.forEach(f => {
+      const keys = selectedKeys(f.key);
+      if (!keys.length) return;
+      const names = keys.map(k => f.items[k].name.replace(/[\s&\-']+/g,""));
+      lines.push(f.mdl + "(" + names.join(", ") + ")");
+    });
+    const s = state.sliders;
+    lines.push("ENERGY(" + s.energy + ")  DARKNESS(" + s.darkness + ")  MYSTICISM(" + s.mysticism + ")");
+    lines.push("AGGRESSION(" + s.aggression + ")  HOPE(" + s.hope + ")");
+    lines.push("MIX(WideStereo, AnalogWarmth, RadioReady)");
+    return lines.join("\n");
+  }
+
+  function tokenSelected(token){
+    if (token.startsWith("genre:")) return state.genre === token.slice(6);
+    if (FAMILY_KEYS.includes(token)){
+      return Object.values(state.selected[token]).some(Boolean);
+    }
+    for (const f of FAMILIES){
+      if (state.selected[f.key][token]) return true;
+    }
+    return false;
+  }
+
+  function checkCompat(){
+    const flat = [];
+    FAMILIES.forEach(f => Object.keys(state.selected[f.key]).forEach(k => { if (state.selected[f.key][k]) flat.push(k); }));
+    const conflicts = CONFLICTS.filter(([a,b]) => tokenSelected(a) && tokenSelected(b));
+    const golden = GOLDEN.filter(([combo]) => combo.every(k => tokenSelected(k)));
+    return { conflicts, golden, flat };
+  }
+
+  function displayName(token){
+    if (token.startsWith("genre:")){
+      const key = token.slice(6);
+      return GENRES[key] ? GENRES[key].label : key;
+    }
+    const fam = FAMILIES.find(f => f.key === token);
+    if (fam) return fam.short;
+    for (const f of FAMILIES){
+      if (f.items[token]) return f.items[token].name;
+    }
+    return token;
+  }
+
+  function conflictedGenreKeys(){
+    const { conflicts } = checkCompat();
+    const set = new Set();
+    conflicts.forEach(([a,b]) => {
+      [a,b].forEach(t => { if (t.startsWith("genre:")) set.add(t.slice(6)); });
+    });
+    return set;
+  }
+
+  // ---------------- rendering ----------------
+  const genreGroupsEl = document.getElementById("genreGroups");
+  const familiesContainer = document.getElementById("familiesContainer");
+  const slidersEl = document.getElementById("sliders");
+  const promptbox = document.getElementById("promptbox");
+  const panelEl = document.getElementById("panel");
+  const copyBtn = document.getElementById("copyBtn");
+  const toastStack = document.getElementById("toastStack");
+  const humIn = document.getElementById("humIn");
+  const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function buildGenreChips(){
+    genreGroupsEl.innerHTML = "";
+    GENRE_GROUPS.forEach(group => {
+      const wrap = document.createElement("div");
+      wrap.className = "genre-group";
+      const cap = document.createElement("p");
+      cap.className = "subcap";
+      cap.textContent = group.label;
+      const row = document.createElement("div");
+      row.className = "genre-row";
+      Object.keys(group.items).forEach(key => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "genre-chip";
+        btn.textContent = group.items[key].label;
+        btn.dataset.key = key;
+        btn.addEventListener("click", () => { state.genre = key; render(true); });
+        row.appendChild(btn);
+      });
+      wrap.appendChild(cap); wrap.appendChild(row);
+      genreGroupsEl.appendChild(wrap);
+    });
+  }
+
+  function buildFamilies(){
+    familiesContainer.innerHTML = "";
+    FAMILIES.forEach(f => {
+      const fs = document.createElement("fieldset");
+      const legend = document.createElement("legend");
+      legend.textContent = f.label;
+      const chips = document.createElement("div");
+      chips.className = "chips";
+      chips.dataset.family = f.key;
+      Object.keys(f.items).forEach(key => {
+        const label = document.createElement("label");
+        label.className = "chip";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.addEventListener("change", () => {
+          state.selected[f.key][key] = !state.selected[f.key][key];
+          render(true);
+        });
+        const span = document.createElement("span");
+        span.textContent = f.items[key].name;
+        label.appendChild(input); label.appendChild(span);
+        chips.appendChild(label);
+      });
+      fs.appendChild(legend); fs.appendChild(chips);
+      familiesContainer.appendChild(fs);
+    });
+  }
+
+  function buildSliders(){
+    slidersEl.innerHTML = "";
+    SLIDER_DEFS.forEach(def => {
+      const row = document.createElement("div");
+      row.className = "slider-row";
+      const label = document.createElement("label");
+      const span1 = document.createElement("span"); span1.textContent = def.label;
+      const span2 = document.createElement("span"); span2.className = "val"; span2.id = "val-" + def.key;
+      label.appendChild(span1); label.appendChild(span2);
+      const input = document.createElement("input");
+      input.type = "range"; input.min = "0"; input.max = "100";
+      input.value = String(state.sliders[def.key]);
+      input.id = "slider-" + def.key;
+      input.addEventListener("input", (e) => {
+        state.sliders[def.key] = Number(e.target.value);
+        render(true);
+      });
+      row.appendChild(label); row.appendChild(input);
+      slidersEl.appendChild(row);
+    });
+  }
+
+  function syncChipVisuals(){
+    const conflictSet = conflictHighlightSet();
+    const conflictedGenres = conflictedGenreKeys();
+    FAMILIES.forEach(f => {
+      const host = document.querySelector('.chips[data-family="' + f.key + '"]');
+      const keys = Object.keys(f.items);
+      Array.from(host.children).forEach((label, i) => {
+        const key = keys[i];
+        const on = !!state.selected[f.key][key];
+        label.classList.toggle("selected", on);
+        label.classList.toggle("chip-conflict", conflictSet.has(f.key + ":" + key));
+        label.querySelector("input").checked = on;
+      });
+    });
+    genreGroupsEl.querySelectorAll(".genre-chip").forEach(btn => {
+      const on = btn.dataset.key === state.genre;
+      btn.classList.toggle("selected", on);
+      btn.classList.toggle("genre-conflict", on && conflictedGenres.has(btn.dataset.key));
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  function syncSliderVisuals(){
+    SLIDER_DEFS.forEach(def => {
+      const v = state.sliders[def.key];
+      document.getElementById("val-" + def.key).textContent = v;
+      const input = document.getElementById("slider-" + def.key);
+      input.value = v;
+      input.style.setProperty("--fill", v + "%");
+    });
+  }
+
+  // ---- conflict highlighting + toast ----
+  let lastConflictKeys = new Set();
+  let lastGoldenKeys = new Set();
+
+  function conflictHighlightSet(){
+    const set = new Set();
+    const { conflicts } = checkCompat();
+    conflicts.forEach(([a,b]) => {
+      [a,b].forEach(token => {
+        if (FAMILY_KEYS.includes(token)){
+          Object.keys(state.selected[token]).forEach(k => {
+            if (state.selected[token][k]) set.add(token + ":" + k);
+          });
+        } else {
+          FAMILIES.forEach(f => {
+            if (f.items[token] && state.selected[f.key][token]) set.add(f.key + ":" + token);
+          });
+        }
+      });
+    });
+    return set;
+  }
+
+  function spawnToast(a, b, note){
+    const div = document.createElement("div");
+    div.className = "toast";
+    div.innerHTML =
+      "<span class='toast-icon'>\u26a0</span>" +
+      "<span class='toast-body'><b>" + displayName(a) + "</b> clashes with <b>" + displayName(b) + "</b><br>" + note + ".</span>" +
+      "<button class='toast-close' type='button' aria-label='Dismiss'>\u2715</button>";
+    toastStack.appendChild(div);
+    requestAnimationFrame(() => div.classList.add("show"));
+    const dismiss = () => {
+      div.classList.remove("show");
+      window.setTimeout(() => div.remove(), 260);
+    };
+    div.querySelector(".toast-close").addEventListener("click", dismiss);
+    if (!reduceMotion) window.setTimeout(dismiss, 5000);
+  }
+
+  function spawnGoldToast(name){
+    const div = document.createElement("div");
+    div.className = "toast gold";
+    div.innerHTML =
+      "<span class='toast-icon'>\u2728</span>" +
+      "<span class='toast-body'>Golden pair, this reads as <b>" + name + "</b>.</span>" +
+      "<button class='toast-close' type='button' aria-label='Dismiss'>\u2715</button>";
+    toastStack.appendChild(div);
+    requestAnimationFrame(() => div.classList.add("show"));
+    const dismiss = () => {
+      div.classList.remove("show");
+      window.setTimeout(() => div.remove(), 260);
+    };
+    div.querySelector(".toast-close").addEventListener("click", dismiss);
+    if (!reduceMotion) window.setTimeout(dismiss, 5000);
+  }
+
+  function updateConflictToasts(conflicts){
+    const nowKeys = new Set(conflicts.map(([a,b]) => a + "|" + b));
+    conflicts.forEach(([a,b,note]) => {
+      const key = a + "|" + b;
+      if (!lastConflictKeys.has(key)) spawnToast(a, b, note);
+    });
+    lastConflictKeys = nowKeys;
+  }
+
+  function updateGoldenToasts(golden){
+    const nowKeys = new Set(golden.map(([combo]) => combo.join(",")));
+    golden.forEach(([combo, name]) => {
+      const key = combo.join(",");
+      if (!lastGoldenKeys.has(key)) spawnGoldToast(name);
+    });
+    lastGoldenKeys = nowKeys;
+  }
+
+  function renderNotices(){
+    const { conflicts, golden } = checkCompat();
+    updateGoldenToasts(golden);
+    updateConflictToasts(conflicts);
+  }
+
+  // сырой текст до хьюманайзера
+  function rawText(){
+    if (state.tab === "prompt") return compilePrompt();
+    if (state.tab === "brief")  return generateBrief(0);
+    if (state.tab === "hum")    return state.humInput;
+    return compileMDL();
+  }
+  // MDL не трогаем: это код, а не проза
+  function currentText(){
+    const raw = rawText();
+    if (state.tab === "mdl" || !state.humOn) return raw;
+    return humanise(raw, "en").text;
+  }
+  const TAB_COPY = { prompt:"Copy prompt", brief:"Copy brief", hum:"Copy result", mdl:"Copy MDL" };
+
+  function updateOutputStats(text){
+    const el = document.getElementById("outputStats");
+    if (!el) return;
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    el.textContent = words + " words \u00b7 " + chars + " chars";
+  }
+
+  function renderOutput(){
+    const text = currentText();
+    promptbox.textContent = text;
+    updateOutputStats(text);
+    copyBtn.textContent = TAB_COPY[state.tab] || "Copy prompt";
+    copyBtn.classList.remove("copied");
+    humIn.hidden = state.tab !== "hum";
+    document.querySelectorAll(".tab[data-tab]").forEach(t => {
+      t.classList.toggle("active", t.getAttribute("data-tab") === state.tab);
+    });
+  }
+
+  function flarePanel(){
+    if (reduceMotion) return;
+    panelEl.classList.add("flare");
+    window.clearTimeout(flarePanel._t);
+    flarePanel._t = window.setTimeout(() => panelEl.classList.remove("flare"), 550);
+  }
+
+  function render(didChange){
+    syncChipVisuals();
+    syncSliderVisuals();
+    renderNotices();
+    renderOutput();
+    if (didChange) flarePanel();
+  }
+
+  // ---------------- wiring ----------------
+  document.querySelectorAll(".tab[data-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.tab = btn.getAttribute("data-tab");
+      render(false);
+    });
+  });
+
+  const humToggle = document.getElementById("humToggle");
+  humToggle.addEventListener("click", () => {
+    state.humOn = !state.humOn;
+    humToggle.classList.toggle("active", state.humOn);
+    humToggle.textContent = "Humaniser: " + (state.humOn ? "on" : "off");
+    render(true);
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    state = defaultState();
+    render(true);
+  });
+
+  humIn.addEventListener("input", () => {
+    state.humInput = humIn.value;
+    renderOutput();
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    const text = currentText();
+    try{ await navigator.clipboard.writeText(text); }
+    catch(e){
+      const ta = document.createElement("textarea");
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      document.execCommand("copy"); document.body.removeChild(ta);
+    }
+    copyBtn.textContent = "Copied";
+    copyBtn.classList.add("copied");
+    window.clearTimeout(copyBtn._t);
+    copyBtn._t = window.setTimeout(() => {
+      copyBtn.textContent = TAB_COPY[state.tab] || "Copy prompt";
+      copyBtn.classList.remove("copied");
+    }, 1400);
+  });
+
+  // ---------------- saved presets ----------------
+  const PRESET_KEY = "identityEnginePresets";
+  const presetNameInput = document.getElementById("presetName");
+  const savePresetBtn = document.getElementById("savePresetBtn");
+  const presetsListEl = document.getElementById("presetsList");
+
+  function loadPresets(){
+    try{ return JSON.parse(localStorage.getItem(PRESET_KEY) || "[]"); }
+    catch(e){ return []; }
+  }
+  function savePresetsToStorage(list){
+    try{ localStorage.setItem(PRESET_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function captureState(){
+    const sel = {};
+    FAMILIES.forEach(f => { sel[f.key] = Object.assign({}, state.selected[f.key]); });
+    return { genre: state.genre, selected: sel, sliders: Object.assign({}, state.sliders), humOn: state.humOn };
+  }
+  function applyPreset(p){
+    state.genre = p.genre || state.genre;
+    state.selected = emptySelection();
+    Object.keys(p.selected || {}).forEach(famKey => {
+      if (!state.selected[famKey]) return;
+      Object.keys(p.selected[famKey]).forEach(k => { state.selected[famKey][k] = !!p.selected[famKey][k]; });
+    });
+    SLIDER_DEFS.forEach(s => {
+      if (p.sliders && p.sliders[s.key] != null) state.sliders[s.key] = p.sliders[s.key];
+    });
+    if (p.humOn != null) state.humOn = p.humOn;
+    render(true);
+  }
+  function renderPresets(){
+    const list = loadPresets();
+    presetsListEl.innerHTML = "";
+    list.forEach((p, i) => {
+      const chip = document.createElement("span");
+      chip.className = "preset-chip";
+      const loadBtn = document.createElement("button");
+      loadBtn.type = "button"; loadBtn.className = "preset-load"; loadBtn.textContent = p.name;
+      loadBtn.addEventListener("click", () => applyPreset(p));
+      const delBtn = document.createElement("button");
+      delBtn.type = "button"; delBtn.className = "preset-del";
+      delBtn.textContent = "\u2715"; delBtn.setAttribute("aria-label", "Delete preset");
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const l = loadPresets(); l.splice(i, 1); savePresetsToStorage(l); renderPresets();
+      });
+      chip.appendChild(loadBtn); chip.appendChild(delBtn);
+      presetsListEl.appendChild(chip);
+    });
+  }
+  savePresetBtn.addEventListener("click", () => {
+    const name = (presetNameInput.value || "").trim();
+    if (!name) { presetNameInput.focus(); return; }
+    const list = loadPresets();
+    list.push(Object.assign({ name }, captureState()));
+    savePresetsToStorage(list);
+    presetNameInput.value = "";
+    renderPresets();
+  });
+  presetNameInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") savePresetBtn.click();
+  });
+
+  // ---------------- init ----------------
+  buildGenreChips();
+  buildFamilies();
+  buildSliders();
+  renderPresets();
+  render(false);
+
+})();
+</script>
+</body>
+</html>
