@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8"> 
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>iDentity Prompt Engine</title>
 <style>
@@ -9,7 +9,7 @@
     --ink:#141416;
     --plate:#1b1b1e;
     --plate2:#1f1f22;
-    --line:#2b2b2f;
+    --line:#7d7467;
     --line-soft:#232326;
     --paper:#f4f2ee;
     --steel:#565b62;
@@ -138,7 +138,7 @@
   }
   .subcap{
     font-family:var(--font-mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
-    color:var(--ash-dim); margin:0 0 6px;
+    color:var(--ash-dim); margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line-soft);
   }
 
   .chips{ display:grid; grid-template-columns:repeat(auto-fill, minmax(96px,1fr)); gap:8px; }
@@ -556,11 +556,21 @@
   const GENRE_GROUPS = [
    { label:"Рок-мир", items:{
       arena:{ label:"Арена-хардрок/индастриал", base:"modern cinematic arena hard rock fused with industrial rock and alternative metal", tempo:"a driving 70-130 BPM, drop-D", mdl:["ArenaHardRock","Industrial","AltMetal"] },
-      slavicg:{ label:"Славянский мистик-этно", base:"soft Slavic ethno-electronic downtempo with ritual ambient textures", tempo:"a slow, unhurried tempo", mdl:["EthnoElectronic","Downtempo","RitualAmbient"] },
       synth:{ label:"Кинематографичный synthwave", base:"cinematic synthwave with retro-futuristic analog synths", tempo:"a steady, pulsing mid-tempo", mdl:["Synthwave","Cinematic"] },
       postrockg:{ label:"Пост-рок кинематик", base:"post-rock instrumental cinema, built from silence to catharsis", tempo:"a patient, slow-building tempo", mdl:["PostRock","Instrumental","Cinematic"] },
       dark:{ label:"Тёмная эмбиент-баллада", base:"a dark cinematic ballad, sparse and cavernous", tempo:"a slow, spacious tempo", mdl:["DarkAmbient","Ballad","Cinematic"] },
       grunge:{ label:"Гранж/альт-рок", base:"raw 90s grunge and alternative rock, unpolished and heavy with feedback", tempo:"a mid-tempo 90-120 BPM", mdl:["Grunge","AltRock"] },
+      doomgaze:{ label:"Думгейз", base:"a monolithic doomgaze wall of sound, blending funereal doom-metal weight with blurred, reverb-drenched shoegaze haze", tempo:"a slow, crushing 55-75 BPM", mdl:["Doomgaze","DoomMetal","Shoegaze"] },
+      shoegazeg:{ label:"Шугейз", base:"hazy, blurred wall-of-sound shoegaze guitars drenched in reverb and distortion, with dreamlike, buried vocals", tempo:"a mid-tempo 90-120 BPM", mdl:["Shoegaze","DreamPop"] },
+      postpunk:{ label:"Пост-панк", base:"angular, driving post-punk with a propulsive bassline, icy guitar hooks and a detached, urgent vocal delivery", tempo:"a tense, driving 110-140 BPM", mdl:["PostPunk","NewWave"] },
+   }},
+   { label:"Этно-мир", items:{
+      slavicg:{ label:"Славянский мистик-этно", base:"soft Slavic ethno-electronic downtempo with ritual ambient textures", tempo:"a slow, unhurried tempo", mdl:["EthnoElectronic","Downtempo","RitualAmbient"] },
+      tribalritual:{ label:"Трайбл-ритуал даунтемпо", base:"hypnotic tribal ritual downtempo built on dense hand percussion and shamanic drums, trance-inducing and earthbound", tempo:"a slow, hypnotic 70-90 BPM", mdl:["TribalRitual","Downtempo","ShamanicDrums"] },
+      nordic:{ label:"Нордик/рунический фолк-эмбиент", base:"Nordic runic folk ambient with overtone throat singing, frame drums and icy atmospheric drones", tempo:"a slow, solemn tempo", mdl:["NordicFolk","RunicAmbient","ThroatSinging"] },
+      silkroad:{ label:"Шёлковый путь / восточный мистик", base:"meditative Silk Road mysticism built on duduk, dombra and Central Asian modal drones", tempo:"a slow, meditative tempo", mdl:["SilkRoadMystic","CentralAsianDrone","Duduk"] },
+      andean:{ label:"Андский церемониал", base:"warm Andean ceremonial music built on pan flute and wooden winds over an earthbound, organic groove", tempo:"a gentle, walking tempo", mdl:["AndeanCeremonial","PanFlute","Organic"] },
+      celtic:{ label:"Кельтский мистик-эмбиент", base:"druidic Celtic mystic ambient with ethereal vocals and traditional Celtic instrumentation", tempo:"a slow, floating tempo", mdl:["CelticMystic","DruidicAmbient","Ethereal"] },
    }},
    { label:"За пределами рока", items:{
       pop:{ label:"Поп-гимн", base:"a polished mainstream pop anthem", tempo:"an upbeat 100-124 BPM", mdl:["PopAnthem","Mainstream"] },
