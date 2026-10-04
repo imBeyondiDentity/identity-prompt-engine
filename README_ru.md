@@ -41,12 +41,6 @@ python3 -m http.server 8000
 
 затем открой `http://localhost:8000`.
 
-## Публикация на GitHub Pages
-
-1. Страница репозитория **Settings → Pages**.
-2. В разделе **Build and deployment → Source** выбери **Deploy from a branch**.
-3. Ветка: `main`, папка: `/ (root)`. **Save**.
-4. Сайт появится по адресу `https://<твой-юзернейм>.github.io/<имя-репозитория>/` в течение пары минут.
 
 ## Структура
 
